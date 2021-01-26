@@ -2,8 +2,8 @@ import string
 import struct
 import sys
 
+from .ids import packet_ids
 from dataclasses import dataclass, fields
-from networking.protocol_578 import packet_ids
 from networking.util.datatypes import *
 from typing import Dict, List, Optional, Tuple, Union
 

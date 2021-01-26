@@ -17,7 +17,7 @@ class LegacyServerPingAlert(Exception):
 class Connection:
     connections = []
     
-    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter, packet_cb):
+    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         """
         Initialize a new Connection based on the given reader and writer pair, along with the provided callback for
         new packets.
@@ -27,16 +27,17 @@ class Connection:
         :param packet_cb: Callback that will be called when a new packet is received. Must be a function that takes
         one argument, the Packet that was received. (Will be one of the Packet classes provided).
         """
-        self.state = "handshake"
-        self.reader = reader
-        self.writer = writer
+        self.state = "handshake"  # Current server state, as a string. Could probably also be an int or Enum?
+        self.reader = reader  # Reader object to send data to the client
+        self.writer = writer  # Writer object to read data from the client
         self.version = 578  # Default version of protocol we're speaking here
-        self.encryption = None
-        self.compression = 0
-        self.remote_addr = writer.get_extra_info("peername")
-        self.server_addr = (None, None)
-        self.packet_cb = packet_cb
-        self.connections.append(self)
+        self.encryption = None  # None if not encrypted else key
+        self.compression = 0  # 0 if disabled else compression limit
+        self.remote_addr = writer.get_extra_info("peername")  # (addr, port) pair
+        self.server_addr = (None, None)  # Address the client tried to connect to
+        self.connections.append(self)  # Add us to the current active connection list
+        self._packet_handlers = {}  # Packet handlers is intended to be a Dict[event, List[handler]]
+        # Handlers can be added with the register_packet() decorator on an asynchronous function
     
     async def start(self):
         """Called to initialize communication with the connected client."""
@@ -214,6 +215,8 @@ class Connection:
     async def dispatch_play_packet(self, data):
         # Should call a registered handler, with a decorator to register new handlers for specific packets.
         pass
+    
+    
 
 # Todo: Need to have packet listeners before and after encryption, compression, and raw socket, on both send and
 #  receive side in order to allow protocol inspection
